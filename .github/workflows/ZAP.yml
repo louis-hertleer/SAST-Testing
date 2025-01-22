@@ -1,0 +1,32 @@
+name: ZAP DAST
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  zap_scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Run OWASP ZAP
+      - name: Run ZAP Baseline Scan
+        uses: zaproxy/action-full-scan@v0.3.0
+        with:
+          # Target URL to scan
+          target: 'http://your-application-url'
+          # Generate reports in HTML format
+          cmd_options: '-t http://your-application-url -r zap_report.html'
+
+      # Upload the ZAP Report
+      - name: Upload ZAP Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: ZAP Report
+          path: zap_report.html

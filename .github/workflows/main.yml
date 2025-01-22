@@ -113,9 +113,8 @@ jobs:
               --target-port 8080 \
               --env-vars ConnectionStrings__DefaultConnection="Server=tcp:dbbeesafe.database.windows.net,1433;Initial Catalog=beesafe;Persist Security Info=False;User ID=${{ secrets.MYSQL_USER }};Password=${{ secrets.MYSQL_PASSWORD }};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;" \
               --ingress external \
-              --environment caebeesafe \
-              --scale-min 1
-
+              --environment caebeesafe 
+              
       - name: Get Domain Name
         run: |
               echo "Container App Public URL:"
