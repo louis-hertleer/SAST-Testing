@@ -23,7 +23,7 @@ jobs:
         with:
           target: ${{ secrets.APPLICATION_URL }}
           cmd_options: '-t ${{ secrets.APPLICATION_URL }} -r zap_report.html'
-          issue_title: ''
+          issue_title: 'ZAP Report'
 
 
       - name: Upload ZAP Report
