@@ -1,7 +1,7 @@
 using System.Text.Json;
 using BeeSafeWeb.Data;
 using BeeSafeWeb.Messages;
-using BeeSafeWeb.Utility.Models;
+using BeeSafeWeb.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BeeSafeWeb.Controllers;
@@ -20,7 +20,7 @@ public class DeviceController : Controller
     }
 
     [HttpPost("Register")]
-    public async Task<IActionResult> Register(RegisterRequest request)
+    public IActionResult Register(RegisterRequest request)
     {
         Device device = new()
         {
@@ -30,19 +30,29 @@ public class DeviceController : Controller
             IsApproved = false,
         };
 
-        await _deviceRepository.AddAsync(device);
+        _deviceRepository.Add(device);
 
-        return Ok(new { Id = device.Id });
+        RegisterResponse response = new ()
+        {
+            Id = device.Id,
+        };
+
+        return Ok(response);
     }
 
-    private async Task<ActionResult> MessageIsValid(RequestMessage message)
+    private ActionResult MessageIsValid(RequestMessage message)
     {
-        if (string.IsNullOrEmpty(message.Device) || !Guid.TryParse(message.Device, out var guid))
+        Device? device;
+        Guid guid;
+
+        if (String.IsNullOrEmpty(message.Device) || !Guid.TryParse(message.Device, out guid))
         {
             return Unauthorized();
         }
 
-        var device = await Task.Run(() => _deviceRepository.GetByIdAsync(guid));
+        device = _deviceRepository.GetById(guid);
+
+        /* device must be in the system */
         if (device == null)
         {
             return Unauthorized();
@@ -57,58 +67,85 @@ public class DeviceController : Controller
     }
 
     [HttpPost("Ping")]
-    public async Task<IActionResult> Ping(RequestMessage requestMessage)
+    public IActionResult Ping(RequestMessage requestMessage)
     {
-        var result = await MessageIsValid(requestMessage);
+        Device device;
+        var result = MessageIsValid(requestMessage);
 
-        if (result is not OkObjectResult okResult)
+        if (result is not OkObjectResult)
         {
             return result;
         }
 
-        var device = (Device)okResult.Value;
-        device.LastActive = DateTime.Now;
-        await _deviceRepository.UpdateAsync(device);
-
-        return Ok(new ResponseMessage { MessageType = MessageType.Pong });
-    }
-
-    [HttpPost("DetectionEvent")]
-    public async Task<IActionResult> DetectionEvent(RequestMessage requestMessage)
-    {
-        var result = await MessageIsValid(requestMessage);
-
-        if (result is not OkObjectResult okResult)
-        {
-            return result;
-        }
-
-        var device = (Device)okResult.Value;
-
-        if (requestMessage.MessageType != MessageType.DetectionEvent || requestMessage.Data is null)
+        if (requestMessage.MessageType != MessageType.Ping)
         {
             return BadRequest();
         }
 
+        /* update the last active state */
+        device = (result as OkObjectResult).Value as Device;
+        device.LastActive = DateTime.Now;
+        _deviceRepository.Update(device);
+
+        var response = new ResponseMessage()
+        {
+            MessageType = MessageType.Pong
+        };
+
+        return Ok(response);
+    }
+
+    [HttpPost("DetectionEvent")]
+    public IActionResult DetectionEvent(RequestMessage requestMessage)
+    {
+        Device device;
+        float hornetDirection;
+        Guid guid;
+        int timestamp;
+        var result = MessageIsValid(requestMessage);
+
+        if (result is not OkObjectResult)
+        {
+            return result;
+        }
+
+        /* At this point, we can parse the guid successfully. If this fails,
+         * IDK anymore
+         */
+        Guid.TryParse(requestMessage.Device, out guid);
+        device = _deviceRepository.GetById(guid)!;
+
+        if (requestMessage.MessageType != MessageType.DetectionEvent
+            || requestMessage.Data is null)
+        {
+            return BadRequest();
+        }
+
+        JsonElement data = requestMessage.Data;
+
         try
         {
-            var data = requestMessage.Data;
-            int timestamp = data.GetProperty("timestamp").GetInt32();
-            float hornetDirection = data.GetProperty("hornet_direction").GetSingle();
-
-            DetectionEvent detectionEvent = new()
-            {
-                Timestamp = DateTimeOffset.FromUnixTimeSeconds(timestamp).DateTime,
-                HornetDirection = hornetDirection,
-                Device = device
-            };
-
-            await  _detectionRepository.AddAsync(detectionEvent);
+            timestamp = data.GetProperty("timestamp").GetInt32();
+            hornetDirection = data.GetProperty("hornet_direction").GetSingle();
         }
-        catch (Exception)
+        catch (KeyNotFoundException)
         {
-            return BadRequest("Invalid data format.");
+            return BadRequest(
+                "\"data\" attribute is missing either timestamp or hornet_direction.");
         }
+        catch (InvalidOperationException)
+        {
+            return BadRequest();
+        }
+
+        DetectionEvent detectionEvent = new()
+        {
+            Timestamp = DateTimeOffset.FromUnixTimeSeconds(timestamp).DateTime,
+            HornetDirection = hornetDirection,
+            Device = device
+        };
+
+        _detectionRepository.Add(detectionEvent);
 
         return Ok();
     }

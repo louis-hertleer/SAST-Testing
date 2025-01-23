@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using BeeSafeWeb.Utility.Models;
+using BeeSafeWeb.Models;
 
 namespace BeeSafeWeb.Data;
 
@@ -10,6 +10,7 @@ public class BeeSafeContext : DbContext
     public DbSet<Device> Devices { get; set; }
     public DbSet<KnownHornet> KnownHornets { get; set; }
     public DbSet<NestEstimate> NestEstimates { get; set; }
+    public DbSet<User> Users { get; set; }
     
     public BeeSafeContext(DbContextOptions<BeeSafeContext> options) :
         base(options) {}
@@ -21,6 +22,7 @@ public class BeeSafeContext : DbContext
         modelBuilder.Entity<Device>().ToTable("Device");
         modelBuilder.Entity<KnownHornet>().ToTable("KnownHornet");
         modelBuilder.Entity<NestEstimate>().ToTable("NestEstimate");
+        modelBuilder.Entity<User>().ToTable("User");
         
         base.OnModelCreating(modelBuilder);
     }

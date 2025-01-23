@@ -1,8 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace BeeSafeWeb.Data;
 
@@ -16,38 +12,34 @@ public class GenericRepository<T> : IRepository<T> where T : class
         _table = context.Set<T>();
         _context = context;
     }
-
-    public async Task<List<T>> GetAllAsync()
+    public List<T> GetAll()
     {
-        return await _table.ToListAsync();
+        return _table.ToList();
     }
 
-    public async Task<T?> GetByIdAsync(Guid id)
+    public T? GetById(Guid id)
     {
-        return await _table.FindAsync(id);
+        return _table.Find(id);
     }
 
-    public async Task AddAsync(T entity)
+    public void Add(T entity)
     {
-        await _table.AddAsync(entity);
-        await _context.SaveChangesAsync();
+        _table.Add(entity);
+        _context.SaveChanges();
     }
 
-    public async Task UpdateAsync(T entity)
+    public void Update(T entity)
     {
         _table.Attach(entity);
         _context.Entry(entity).State = EntityState.Modified;
-        await _context.SaveChangesAsync();
+        _context.SaveChanges();
     }
 
-    public async Task DeleteAsync(Guid id)
+    public void Delete(Guid id)
     {
-        var existing = await _table.FindAsync(id);
+        T? existing = _table.Find(id);
         if (existing != null)
-        {
             _table.Remove(existing);
-            await _context.SaveChangesAsync();
-        }
     }
 
     public IQueryable<T> GetQueryable()

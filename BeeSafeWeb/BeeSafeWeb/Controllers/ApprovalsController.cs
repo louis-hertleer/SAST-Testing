@@ -1,5 +1,5 @@
 using BeeSafeWeb.Data;
-using BeeSafeWeb.Utility.Models;
+using BeeSafeWeb.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,19 +15,23 @@ public class ApprovalsController : Controller
         _deviceRepository = deviceRepository;
     }
 
-    public async Task<IActionResult> Index()
+    // GET
+    public IActionResult Index()
     {
-        var devices = await Task.Run(() => _deviceRepository.GetQueryable()
-            .Where(d => !d.IsApproved && !d.IsDeclined)
-            .ToList());
+        var devices = _deviceRepository.GetQueryable()
+            .Where(d => !d.IsApproved)
+            .Where(d => !d.IsDeclined)
+            .ToList();
 
         return View(devices);
     }
 
     [HttpPost("ApproveDevice/{id:guid}")]
-    public async Task<IActionResult> ApproveDevice(Guid id)
+    public IActionResult ApproveDevice(Guid id)
     {
-        var device = await _deviceRepository.GetByIdAsync(id);
+        Device? device;
+
+        device = _deviceRepository.GetById(id);
         if (device == null)
         {
             return NotFound();
@@ -36,25 +40,28 @@ public class ApprovalsController : Controller
         device.IsApproved = true;
         device.LastActive = DateTime.Now;
 
-        await _deviceRepository.UpdateAsync(device);
+        _deviceRepository.Update(device);
 
-        return RedirectToAction("Index", "Approvals");
+        return RedirectToAction("Index", "Approvals", new {});
     }
 
     [HttpPost("RejectDevice/{id:guid}")]
-    public async Task<IActionResult> RejectDevice(Guid id)
+    public IActionResult RejectDevice(Guid id)
     {
-        var device = await _deviceRepository.GetByIdAsync(id);
+        Device? device;
+
+        device = _deviceRepository.GetById(id);
         if (device == null)
         {
             return NotFound();
         }
 
+        /* XXX: probably not needed */
         device.IsApproved = false;
         device.IsDeclined = true;
 
-        await _deviceRepository.UpdateAsync(device);
+        _deviceRepository.Update(device);
 
-        return RedirectToAction("Index", "Approvals");
+        return RedirectToAction("Index", "Approvals", new {});
     }
 }
