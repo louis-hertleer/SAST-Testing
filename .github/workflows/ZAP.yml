@@ -17,12 +17,12 @@ jobs:
 
       # Run OWASP ZAP
       - name: Run ZAP Baseline Scan
-        uses: zaproxy/action-full-scan@v0.3.0
+        uses: zaproxy/action-full-scan@v0.12.0
         with:
           # Target URL to scan
-          target: 'http://your-application-url'
+          target: ${{ secrets.APPLICATION_URL }}
           # Generate reports in HTML format
-          cmd_options: '-t http://your-application-url -r zap_report.html'
+          cmd_options: '-t ${{ secrets.APPLICATION_URL }} -r zap_report.html'
 
       # Upload the ZAP Report
       - name: Upload ZAP Report
