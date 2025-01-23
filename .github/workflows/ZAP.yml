@@ -6,25 +6,26 @@ on:
       - main
   pull_request:
 
+permissions:
+  contents: write
+  issues: write
+
 jobs:
   zap_scan:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the code
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Run OWASP ZAP
       - name: Run ZAP Baseline Scan
         uses: zaproxy/action-full-scan@v0.12.0
         with:
-          # Target URL to scan
           target: ${{ secrets.APPLICATION_URL }}
-          # Generate reports in HTML format
           cmd_options: '-t ${{ secrets.APPLICATION_URL }} -r zap_report.html'
+          issue_title: ''
 
-      # Upload the ZAP Report
+
       - name: Upload ZAP Report
         uses: actions/upload-artifact@v3
         with:
